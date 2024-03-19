@@ -109,6 +109,7 @@ void remove_and_deallocate_vector(void) {
 }
 
 bool quitMainLoop = false;
+bool quitTasks = false;
 
 int main()
 {
@@ -133,69 +134,85 @@ int main()
           localCtlMsg.endlessCalcThreads != msg.endlessCalcThreads ||
           localCtlMsg.numPiCalcTasks != msg.numPiCalcTasks ||
           localCtlMsg.triggerPiTasks != msg.triggerPiTasks ||
-          localCtlMsg.quitFlag != msg.quitFlag)
+          localCtlMsg.quitFlag != msg.quitFlag ||
+          localCtlMsg.switchToImguiDemo != msg.switchToImguiDemo ||
+          localCtlMsg.switchToLvglDemo != msg.switchToLvglDemo)
           msgChanged = true;
 
           
           if (true == firstFlg || true == msgChanged){
-               if (true == msg.quitFlag){
-                    // deallocate all memory
-                    for (unsigned int i = 0; i < localCtlMsg.allocMbytes; i++){
-                         remove_and_deallocate_vector();
-                    }
-                    // kill all Endless threads
-                    endlessManager.setNumberOfEndlessThreads(0); 
-                    // the thread pool handling is integrated in itself upon destruction!
-                    // simply break the loop:
-                    quitMainLoop = true;
+               if (true == msg.switchToImguiDemo) {
+                    // do lvgl work
                } else {
-                    // main work - first check allocate bytes
-                    if (localCtlMsg.allocMbytes > msg.allocMbytes){
-                         // deallocate
-                         for (unsigned int i = 0; i < localCtlMsg.allocMbytes - msg.allocMbytes; i++){
-                              remove_and_deallocate_vector();
-                         }
-                    } else {
-                         if (localCtlMsg.allocMbytes < msg.allocMbytes){
-                              for (unsigned int i = 0; i < msg.allocMbytes - localCtlMsg.allocMbytes; i++){
-                                   allocate_and_fill_memory_1MB();
+                    if (true == msg.switchToLvglDemo) {
+                         // do lvgl work
+                    } else {                                   
+                         if (true == msg.quitFlag){
+                              // deallocate all memory
+                              for (unsigned int i = 0; i < localCtlMsg.allocMbytes; i++){
+                                   remove_and_deallocate_vector();
                               }
-                         }
-                    } // else do nothing - the amount is the same as before.
+                              // kill all Endless threads
+                              endlessManager.setNumberOfEndlessThreads(0); 
+                              // the thread pool handling is integrated in itself upon destruction!
+                              
+                              // wait for the thread to end at program exit
+                              imth.join();
+                              quitTasks = false;
+                              // simply break the loop:
+                              quitMainLoop = true;
+                                                  
+                              // wait for the thread to end at program exit
+                              imth.join();
 
-                    // main work - check endlessCalcThreads
-                    if (localCtlMsg.endlessCalcThreads != msg.endlessCalcThreads){
-                         endlessManager.setNumberOfEndlessThreads(msg.endlessCalcThreads); 
+                         } else {
+                              // main work - first check allocate bytes
+                              if (localCtlMsg.allocMbytes > msg.allocMbytes){
+                                   // deallocate
+                                   for (unsigned int i = 0; i < localCtlMsg.allocMbytes - msg.allocMbytes; i++){
+                                        remove_and_deallocate_vector();
+                                   }
+                              } else {
+                                   if (localCtlMsg.allocMbytes < msg.allocMbytes){
+                                        for (unsigned int i = 0; i < msg.allocMbytes - localCtlMsg.allocMbytes; i++){
+                                             allocate_and_fill_memory_1MB();
+                                        }
+                                   }
+                              } // else do nothing - the amount is the same as before.
+
+                              // main work - check endlessCalcThreads
+                              if (localCtlMsg.endlessCalcThreads != msg.endlessCalcThreads){
+                                   endlessManager.setNumberOfEndlessThreads(msg.endlessCalcThreads); 
+                              }
+
+                              // main work - check triggerPiTasks
+                              if (localCtlMsg.triggerPiTasks != msg.triggerPiTasks){
+                                   // trigger numPiCalcTasks small calc tasks in separate threads
+                                   for (unsigned int i = 0; i < localCtlMsg.numPiCalcTasks; i++){
+                                        thread_pool.Schedule([i]()
+                                        {
+                                             calc_1000000_times();	
+                                        });
+                                   }
+                              } 
+
+                              // finally simply take the values
+                              localCtlMsg.allocMbytes = msg.allocMbytes;
+                              localCtlMsg.endlessCalcThreads = msg.endlessCalcThreads;
+                              localCtlMsg.numPiCalcTasks = msg.numPiCalcTasks;
+                              localCtlMsg.triggerPiTasks = msg.triggerPiTasks;
+                              std::cout << "/n" << msg.endlessCalcThreads << endl;
+                              std::cout << msg.allocMbytes << endl;
+                              std::cout << msg.numPiCalcTasks << endl;
+                              std::cout << msg.triggerPiTasks << endl;
+                              firstFlg = false;
+                              msgChanged = false;
+                         }       
                     }
-
-                    // main work - check triggerPiTasks
-                    if (localCtlMsg.triggerPiTasks != msg.triggerPiTasks){
-                         // trigger numPiCalcTasks small calc tasks in separate threads
-                         for (unsigned int i = 0; i < localCtlMsg.numPiCalcTasks; i++){
-                              thread_pool.Schedule([i]()
-                              {
-                                   calc_1000000_times();	
-                              });
-                         }
-                    } 
-
-                    // finally simply take the values
-                    localCtlMsg.allocMbytes = msg.allocMbytes;
-                    localCtlMsg.endlessCalcThreads = msg.endlessCalcThreads;
-                    localCtlMsg.numPiCalcTasks = msg.numPiCalcTasks;
-                    localCtlMsg.triggerPiTasks = msg.triggerPiTasks;
-                    std::cout << "/n" << msg.endlessCalcThreads << endl;
-                    std::cout << msg.allocMbytes << endl;
-                    std::cout << msg.numPiCalcTasks << endl;
-                    std::cout << msg.triggerPiTasks << endl;
-                    firstFlg = false;
-                    msgChanged = false;
-               }               
+               }
           }
-     }    
+     }
 
-     // wait for the thread to end at program exit
-     imth.join();
 
      std::cout << "Main thread finished." << std::endl;
 

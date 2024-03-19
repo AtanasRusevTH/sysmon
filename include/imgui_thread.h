@@ -14,6 +14,8 @@ struct Message {
   unsigned int numPiCalcTasks;     // number of simple PI calculation tasks to be started. Once they finish, they stop.
   unsigned int triggerPiTasks;     // single trigger to calc PI.
   bool quitFlag;
+  bool switchToImguiDemo;
+  bool switchToLvglDemo;
 };
 
 // Define a message structure
@@ -27,4 +29,13 @@ struct MessageCntrl_s {
 void ImGuiSendMessage(MessageCntrl_s& msgCtrl, Message message);
 Message MainThreadReceiveMessage(MessageCntrl_s& msgCtrl);
 int imguiTh(MessageCntrl_s& msgCtl);
+
+void ImGuiDemoSendMessage(MessageCntrl_s& msgCtrl, Message message);
+Message MainThreadImguiDemoReceiveMessage(MessageCntrl_s& msgCtrl);
+int imguiDemoTh(MessageCntrl_s& msgCtl);
+
+void LvglSendMessage(MessageCntrl_s& msgCtrl, Message message);
+Message MainThreadLvglReceiveMessage(MessageCntrl_s& msgCtrl);
+int lvglTh(MessageCntrl_s& msgCtl);
+
 #endif // #ifndef IMGUI_THREAD_H

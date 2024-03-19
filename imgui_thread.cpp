@@ -87,7 +87,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
      static int delay = 1;
 
      static float buftime;
-     static float font_scale = 1.85;
+     static float font_scale = 1.65;
 
      static const char* status = "unknown";
 
@@ -100,6 +100,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
      bool triggerPiTasks = false;
      Message message;
      message.quitFlag = false;
+     message.switchToImguiDemo = false;
 
 //     static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_SizingFixedFit;
      // Main loop
@@ -136,7 +137,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
                System->get_sysinfo("totalmem", "freemem", "uptime", "procs");
                System->get_statvfs("totalspace", "freespace");
                System->processor("cpunumber");
-               System->connect("cpufreq", "/proc/cpuinfo", "cpu MHz");
+               // System->connect("cpufreq", "/proc/cpuinfo", "cpu MHz");
                System->connect("procstat", "/proc/stat");
                System->connect("procloadavg", "/proc/loadavg");
                //unsigned int cpufreq0 = System->node_cpufreq_stats(1);
@@ -146,7 +147,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
                else if (uloop == BUFFER_SIZE) status = "done";
                else status = "run";
 
-               if (strcmp("done", status) == 0) delay = 6;
+               // if (strcmp("done", status) == 0) delay = 6;
                float appfreq = 1.0f / io.DeltaTime;
                float upfreq = appfreq / delay;
 
@@ -155,7 +156,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
                proci = System->back("procloadavg", 3);
                procimax = proci > procimax ? proci : procimax;
                
-               Buffer->fill("cpufreq", System->back("cpufreq"));
+               // Buffer->fill("cpufreq", System->back("cpufreq"));
                Buffer->fill("freemem", 100 * System->back("freemem") / System->back("totalmem"));
                Buffer->fill("procs", System->back("procs"));
                Buffer->fill("upfreq", upfreq);
@@ -178,19 +179,20 @@ int imguiTh(MessageCntrl_s& msgCtl)
     // IMGUI_API bool          ::Button(const char* label, const ImVec2& size = ImVec2(0, 0));   // button
     // IMGUI_API bool          SmallButton(const char* label);                                 // button with (FramePadding.y == 0) to easily embed within text
 
-          if (ImGui::Button("[a]bout")) showin.flip(WIN_ABOUT); // showin.show(WIN_ABOUT, winStatAbout);
+          if (ImGui::Button("[A]BOUT ")) showin.flip(WIN_ABOUT); // showin.show(WIN_ABOUT, winStatAbout);
           ImGui::SameLine();
-          if (ImGui::Button("de[b]ug")) showin.flip(WIN_DEBUG); // showin.show(WIN_DEBUG, winStatDebug);
+          // if (ImGui::Button("DE[B]UG ")) showin.flip(WIN_DEBUG); // showin.show(WIN_DEBUG, winStatDebug);
+          if (ImGui::Button("IMGUI DEMO ")) showin.flip(WIN_DEBUG); // showin.show(WIN_DEBUG, winStatDebug);
           ImGui::SameLine();
-          if (ImGui::Button("[c]ontrol")) showin.flip(WIN_CONTROL); // showin.show(WIN_CONTROL, winStatContr);
+          if (ImGui::Button("[C]ONTROL ")) showin.flip(WIN_CONTROL); // showin.show(WIN_CONTROL, winStatContr);
           ImGui::SameLine();          
-          if (ImGui::Button("[m]ode")) histogramode = !histogramode;
+          if (ImGui::Button("[M]ODE ")) histogramode = !histogramode;
           ImGui::SameLine();
-          if (ImGui::Button("[r]eset")) reset = true;
+          if (ImGui::Button("[R]ESET ")) reset = true;
           ImGui::SameLine();
-          if (ImGui::Button("[l]oad test")) showin.flip(WIN_LOAD_TEST); // showin.show(WIN_LOAD_TEST, true);
+          if (ImGui::Button("[L]OAD TEST ")) showin.flip(WIN_LOAD_TEST); // showin.show(WIN_LOAD_TEST, true);
           ImGui::SameLine();
-          if (ImGui::Button("[q]uit")) quit = true;
+          if (ImGui::Button("[Q]UIT ")) quit = true;
 
 
           ImGui::Separator();
@@ -201,7 +203,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
           {
                draw(Buffer, "procs",     "total processes",   "",    histogram);
                draw(Buffer, "loadavg3",  "running processes", "",    histogram);
-               draw(Buffer, "cpufreq",   "cpu frequence",     "MHz", histogram);
+               // draw(Buffer, "cpufreq",   "cpu frequence",     "MHz", histogram);
                draw(Buffer, "appfreq",   "imgui frequence",   "Hz",  histogram);
                draw(Buffer, "upfreq",    "app frequence",     "Hz",  histogram);               
                draw(Buffer, "freemem",   "free RAM",       "%",   histogram);
@@ -211,7 +213,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
           {
                draw(Buffer, "procs",     "total processes",   "",    history);
                draw(Buffer, "loadavg3",  "running processes", "",    history);
-               draw(Buffer, "cpufreq",   "cpu frequence",     "MHz", history);
+               // draw(Buffer, "cpufreq",   "cpu frequence",     "MHz", history);
                draw(Buffer, "appfreq",   "imgui frequence",   "Hz",  history);
                draw(Buffer, "upfreq",    "app frequence",     "Hz",  history);
                draw(Buffer, "freemem",   "free RAM",       "%",   history);
@@ -240,7 +242,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
                sprintf(bufoverlay, "history %10.0f seconds", buftime);
                ImGui::ProgressBar(buftime / 1111, ImVec2(0.0f, 0.0f), bufoverlay);
                ImGui::SeparatorText("control");
-               ImGui::SliderInt("update time", &delay, 1, 100);
+               ImGui::SliderInt("update time", &delay, 1, 20);
                ImGui::Separator();
                ImGui::Separator();
                ImGui::SliderFloat("font scale", &font_scale, 0.5, 5);
@@ -281,7 +283,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
 
                ImGui::InputIntPositive("allocMBytes", &allocMBytes, 1, ImGuiInputTextFlags_EnterReturnsTrue);
                ImGui::InputIntPositive("endlessCalcThreads", &endlessCalcThreads, 1, ImGuiInputTextFlags_EnterReturnsTrue);
-               ImGui::InputIntPositive("numPiCalcTasks", &numPiCalcTasks, 100, ImGuiInputTextFlags_EnterReturnsTrue);
+               ImGui::InputIntPositive("numPiCalcTasks", &numPiCalcTasks, 10, ImGuiInputTextFlags_EnterReturnsTrue);
                
                if (ImGui::Button("triggerPiTasks")) {
                     triggerPiTasks = true;
