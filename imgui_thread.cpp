@@ -19,17 +19,17 @@ int screen_height;
 #include <cstdio>
 
 // Function to send a message from the ImGui thread
-void ImGuiSendMessage(MessageCntrl_s& msgCtrl, Message message) {
+void imguiSymonLoadSendMessage(MessageCntrl_s& msgCtrl, MessageImguiSysmonLoad message) {
   std::lock_guard<std::mutex> lock(msgCtrl.mtx);
   msgCtrl.messageQueue.push(message);
   msgCtrl.cv.notify_one();
 }
 
 // Function to receive a message from the main thread
-Message MainThreadReceiveMessage(MessageCntrl_s& msgCtrl) {
+MessageImguiSysmonLoad imguiSymonLoadReceiveMessage(MessageCntrl_s& msgCtrl) {
   std::unique_lock<std::mutex> lock(msgCtrl.mtx);
   msgCtrl.cv.wait(lock, [&msgCtrl] { return !msgCtrl.messageQueue.empty(); });
-  Message message = msgCtrl.messageQueue.front();
+  MessageImguiSysmonLoad message = msgCtrl.messageQueue.front();
   msgCtrl.messageQueue.pop();
   return message;
 }
@@ -37,7 +37,7 @@ Message MainThreadReceiveMessage(MessageCntrl_s& msgCtrl) {
 
 //
 // Main code
-int imguiTh(MessageCntrl_s& msgCtl)
+int imguiSymonLoad(MessageCntrl_s& msgCtl)
 {
      glfwSetErrorCallback(glfw_error_callback);
      if (!glfwInit()) return 1;
@@ -71,38 +71,40 @@ int imguiTh(MessageCntrl_s& msgCtl)
      ImGui_ImplGlfw_InitForOpenGL(window, true); // @suppress("Invalid arguments")
      ImGui_ImplOpenGL2_Init(); // @suppress("Invalid arguments")
 
-     static K3Buffer* Buffer = new K3Buffer(BUFFER_SIZE);
-     static K3System* System = new K3System();
-     static K3Key showin(WIN_MAX);
+     K3Buffer* Buffer = new K3Buffer(BUFFER_SIZE);
+     K3System* System = new K3System();
+     K3Key showin(WIN_MAX);
 
-     static bool histogramode = false;
-     static bool jump = false;
-     static bool quit = false;     
-     static bool reset = false;
+     bool histogramode = false;
+     bool jump = false;
+     bool quit = false;
+     bool launchImguiDemo = false;
+     bool launchLvglDemo = false;
+     bool reset = false;
 
-     static int procimax = 0;
-     static int proci;
-     static int loop = 0;
-     static int uloop = 0;
-     static int delay = 1;
+     int procimax = 0;
+     int proci;
+     int loop = 0;
+     int uloop = 0;
+     int delay = 1;
 
-     static float buftime;
-     static float font_scale = 1.65;
+     float buftime;
+     float font_scale = 1.58;
 
-     static const char* status = "unknown";
+     const char* status = "unknown";
 
-     static ImGuiWindowFlags mainWindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar;
-     static ImGuiWindowFlags controlWindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
+     ImGuiWindowFlags mainWindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |  ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar;
+     ImGuiWindowFlags controlWindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
      
      int allocMBytes = 0;
      int endlessCalcThreads = 0;
      int numPiCalcTasks = 0;
      bool triggerPiTasks = false;
-     Message message;
+     MessageImguiSysmonLoad message;
      message.quitFlag = false;
      message.switchToImguiDemo = false;
 
-//     static ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_SizingFixedFit;
+//     ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_SizingFixedFit;
      // Main loop
      while (!glfwWindowShouldClose(window))
      {
@@ -119,13 +121,16 @@ int imguiTh(MessageCntrl_s& msgCtl)
 
 
           if (ImGui::IsKeyPressed(ImGuiKey_A)) showin.flip(WIN_ABOUT);
-          if (ImGui::IsKeyPressed(ImGuiKey_B)) showin.flip(WIN_DEBUG);
+          // if (ImGui::IsKeyPressed(ImGuiKey_B)) showin.flip(WIN_DEBUG);
           if (ImGui::IsKeyPressed(ImGuiKey_C)) showin.flip(WIN_CONTROL);          
           if (ImGui::IsKeyPressed(ImGuiKey_M)) histogramode = !histogramode;
           if (ImGui::IsKeyPressed(ImGuiKey_L)) showin.flip(WIN_LOAD_TEST);
           if (ImGui::IsKeyPressed(ImGuiKey_T)) showin.flip(WIN_ABOUT_TEST);
 
           if (ImGui::IsKeyPressed(ImGuiKey_Q)) quit = true;
+          if (ImGui::IsKeyPressed(ImGuiKey_I)) launchImguiDemo = true;
+          if (ImGui::IsKeyPressed(ImGuiKey_V)) launchLvglDemo = true;
+
           if (ImGui::IsKeyPressed(ImGuiKey_R)) reset = true;
                
           delay = delay > 0 ? delay : 1;
@@ -182,8 +187,6 @@ int imguiTh(MessageCntrl_s& msgCtl)
           if (ImGui::Button("[A]BOUT ")) showin.flip(WIN_ABOUT); // showin.show(WIN_ABOUT, winStatAbout);
           ImGui::SameLine();
           // if (ImGui::Button("DE[B]UG ")) showin.flip(WIN_DEBUG); // showin.show(WIN_DEBUG, winStatDebug);
-          if (ImGui::Button("IMGUI DEMO ")) showin.flip(WIN_DEBUG); // showin.show(WIN_DEBUG, winStatDebug);
-          ImGui::SameLine();
           if (ImGui::Button("[C]ONTROL ")) showin.flip(WIN_CONTROL); // showin.show(WIN_CONTROL, winStatContr);
           ImGui::SameLine();          
           if (ImGui::Button("[M]ODE ")) histogramode = !histogramode;
@@ -192,13 +195,17 @@ int imguiTh(MessageCntrl_s& msgCtl)
           ImGui::SameLine();
           if (ImGui::Button("[L]OAD TEST ")) showin.flip(WIN_LOAD_TEST); // showin.show(WIN_LOAD_TEST, true);
           ImGui::SameLine();
+          if (ImGui::Button("[I]MGUI DEMO ")) launchImguiDemo = true;
+          ImGui::SameLine();
+          if (ImGui::Button("L[V]GL DEMO ")) launchLvglDemo = true;
+          ImGui::SameLine();          
           if (ImGui::Button("[Q]UIT ")) quit = true;
 
 
           ImGui::Separator();
 
-          static bool histogram = true; 
-          static bool history = false; 
+          bool histogram = true; 
+          bool history = false; 
           if (histogramode)
           {
                draw(Buffer, "procs",     "total processes",   "",    histogram);
@@ -224,13 +231,13 @@ int imguiTh(MessageCntrl_s& msgCtl)
           ImGui::End();
           
 
-          if (showin.status(WIN_DEBUG) && ImGui::Begin("debug", showin.is(WIN_DEBUG), controlWindowFlags))
+          /*if (showin.status(WIN_DEBUG) && ImGui::Begin("debug", showin.is(WIN_DEBUG), controlWindowFlags))
           {
                ImGui::SeparatorText("debug");
                ImGui::Text("loadavg: %s", System->node("procloadavg")->text);
                ImGui::Text("stat: %s", System->node("procstat")->text);
                ImGui::End();
-          }
+          }*/
 
           if (showin.status(WIN_CONTROL) && ImGui::Begin("control", showin.is(WIN_CONTROL), controlWindowFlags))
           {
@@ -295,7 +302,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
                message.triggerPiTasks = triggerPiTasks;               
                triggerPiTasks = false;
 
-               ImGuiSendMessage(msgCtl, message);
+               imguiSymonLoadSendMessage(msgCtl, message);
 
                ImGui::End();
           }
@@ -352,7 +359,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
           //if (ImGui::End(ImGuiKey_Q)) quit = true;
           //if (ImGui::SmallButton("[q]uit")) quit = true;
 
-          if (quit)
+          if (quit || launchLvglDemo || launchImguiDemo)
           {
                glfwSetWindowShouldClose(window, 1);
           }
@@ -370,10 +377,14 @@ int imguiTh(MessageCntrl_s& msgCtl)
 
      // Cleanup
 
-     message.quitFlag = true;
+     
      message.triggerPiTasks = false;
-
-     ImGuiSendMessage(msgCtl, message);
+     
+     if (quit) message.quitFlag = true;
+     if (launchLvglDemo) message.switchToLvglDemo = true;
+     if (launchImguiDemo) message.switchToImguiDemo = true;
+     
+     imguiSymonLoadSendMessage(msgCtl, message);
 
      delete System;
      delete Buffer;
@@ -383,7 +394,7 @@ int imguiTh(MessageCntrl_s& msgCtl)
      ImGui::DestroyContext();
 
      glfwDestroyWindow(window);
-     glfwTerminate();
+     if (quit) glfwTerminate();
 
      return 0;
 }

@@ -8,7 +8,7 @@
 #include <queue>
 
 // Define a message structure
-struct Message {
+struct MessageImguiSysmonLoad {
   unsigned int endlessCalcThreads; // amount of special threads dedicated to endless calculations
   unsigned int allocMbytes;        // amount of RAM to be allocated
   unsigned int numPiCalcTasks;     // number of simple PI calculation tasks to be started. Once they finish, they stop.
@@ -16,6 +16,7 @@ struct Message {
   bool quitFlag;
   bool switchToImguiDemo;
   bool switchToLvglDemo;
+  bool switchToSysmonImgui;
 };
 
 // Define a message structure
@@ -23,19 +24,15 @@ struct MessageCntrl_s {
     // Shared state between threads
     std::mutex mtx;
     std::condition_variable cv;
-    std::queue<Message> messageQueue;
+    std::queue<MessageImguiSysmonLoad> messageQueue;
 };
 
-void ImGuiSendMessage(MessageCntrl_s& msgCtrl, Message message);
-Message MainThreadReceiveMessage(MessageCntrl_s& msgCtrl);
-int imguiTh(MessageCntrl_s& msgCtl);
+void imguiSymonLoadSendMessage(MessageCntrl_s& msgCtrl, MessageImguiSysmonLoad message);
+MessageImguiSysmonLoad imguiSymonLoadReceiveMessage(MessageCntrl_s& msgCtrl);
+int imguiSymonLoad(MessageCntrl_s& msgCtl);
 
-void ImGuiDemoSendMessage(MessageCntrl_s& msgCtrl, Message message);
-Message MainThreadImguiDemoReceiveMessage(MessageCntrl_s& msgCtrl);
-int imguiDemoTh(MessageCntrl_s& msgCtl);
-
-void LvglSendMessage(MessageCntrl_s& msgCtrl, Message message);
-Message MainThreadLvglReceiveMessage(MessageCntrl_s& msgCtrl);
+void LvglSendMessage(MessageCntrl_s& msgCtrl, MessageImguiSysmonLoad message);
+MessageImguiSysmonLoad MainThreadLvglReceiveMessage(MessageCntrl_s& msgCtrl);
 int lvglTh(MessageCntrl_s& msgCtl);
 
 #endif // #ifndef IMGUI_THREAD_H

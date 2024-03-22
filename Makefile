@@ -21,7 +21,7 @@ IMGUI_DIR = imgui
 TP_DIR = thread_pool
 ENDLESS_TH_M_DIR = endlessThMngr
 
-SOURCES = main.cpp K3Buffer.cpp K3Proc.cpp K3Key.cpp K3System.cpp imgui_thread.cpp
+SOURCES = main.cpp K3Buffer.cpp K3Proc.cpp K3Key.cpp K3System.cpp imgui_thread.cpp imgui_standard_demo.cpp
 SOURCES += $(TP_DIR)/thread_pool.cpp
 SOURCES += $(ENDLESS_TH_M_DIR)/endless_th_manager.cpp
 SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp

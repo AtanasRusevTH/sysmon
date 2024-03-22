@@ -1,0 +1,25 @@
+{
+    // Configure IntelliSense for debugging (optional)
+    "version": "0.2.0",
+    "configurations": [
+        //{
+        //    "name": "GCC: Build and Debug Active File",
+        //    "includePath": ["${workspaceFolder}"],
+        //    "defines": [],
+        //    "compilerPath": "/usr/bin/g++",
+        //    "configurations": ["IntelliSense:Cpp"],
+        //    "intelliSenseMode": "clang-x64" // Adjust based on your architecture (e.g., "clang-x86")
+        //},
+        {
+            "name": "GDB: Launch without arguments",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/loadTester",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "preLaunchTask": "build" // Replace with your build task name if needed
+        }
+    ]
+}

@@ -27,6 +27,7 @@
 #include <signal.h>
 #include "thread_pool/thread_pool.h"
 #include "include/imgui_thread.h"
+#include "include/imgui_standard_demo.h"
 #include "endlessThMngr/endless_th_manager.h"
 
 using namespace std::chrono_literals;
@@ -44,6 +45,15 @@ using namespace std;
 * @copyright 2023 Atanas Rusev, GPL License. Check the License file in the library.
 *
 ***********************************************************************************************************************/
+
+enum taskChange {
+     doNothing,
+     startSysmon,
+     startImguiDemo,
+     startLVGLdemo,
+     quitApp,
+};
+
 
 volatile double pi_vol;
 
@@ -65,7 +75,6 @@ void calc_1000000_times(){
       }
 }
 
-volatile bool firstFlg = 1;
 volatile int debug1MBcntr = 0;
 vector<unique_ptr<vector<double>>> allocated_data;
 
@@ -78,7 +87,7 @@ void allocate_and_fill_memory_1MB(void) {
 
   // Check if allocation was successful
   if (!data) {
-    cerr << "Error: Failed to allocate memory for 1 MB vector." << endl;
+    // cerr << "Error: Failed to allocate memory for 1 MB vector." << endl;
     return; // Exit the function on failure
   }
 
@@ -96,7 +105,7 @@ void allocate_and_fill_memory_1MB(void) {
 void remove_and_deallocate_vector(void) {
   // Check if there are any vectors to remove
   if (allocated_data.empty()) {
-    cerr << "Warning: No vectors to remove from allocated_data." << endl;
+    // cerr << "Warning: No vectors to remove from allocated_data." << endl;
     return; // Exit the function if empty
   }
 
@@ -104,31 +113,32 @@ void remove_and_deallocate_vector(void) {
   // allocated_data.pop_back();
   debug1MBcntr--;
 
-  cout << "Removed and deallocated 1 MB of memory." << endl;
+  // cout << "Removed and deallocated 1 MB of memory." << endl;
 
 }
 
-bool quitMainLoop = false;
-bool quitTasks = false;
+taskChange executeSysmonImguiLoadTest(){
+     
+     taskChange taskChangeFromMsg = doNothing;
 
-int main()
-{
+     bool quitMainLoop = false;
+
 	CTP::ThreadPool thread_pool;
 
-     EndlessThreadManager endlessManager;
-
      MessageCntrl_s MessageCtl;
-     Message localCtlMsg = {0,0,0,0, false};
+     MessageImguiSysmonLoad localCtlMsg = {0,0,0,0, false};
      bool msgChanged = 0;     
-     
+
      allocated_data.reserve(2048);
      
+     EndlessThreadManager endlessManager;
+     
      // here we create the imgui thread.
-     std::thread imth(imguiTh, std::ref(MessageCtl));
+     std::thread imth(imguiSymonLoad, std::ref(MessageCtl));
 
      while(false == quitMainLoop){
-          // Message MainThreadReceiveMessage(MessageCntrl_s& msgCtrl)
-          auto msg = MainThreadReceiveMessage(MessageCtl);
+          // MessageImguiSysmonLoad MainThreadReceiveMessage(MessageCntrl_s& msgCtrl)
+          auto msg = imguiSymonLoadReceiveMessage(MessageCtl);
           
           if (localCtlMsg.allocMbytes != msg.allocMbytes ||
           localCtlMsg.endlessCalcThreads != msg.endlessCalcThreads ||
@@ -138,81 +148,191 @@ int main()
           localCtlMsg.switchToImguiDemo != msg.switchToImguiDemo ||
           localCtlMsg.switchToLvglDemo != msg.switchToLvglDemo)
           msgChanged = true;
-
           
-          if (true == firstFlg || true == msgChanged){
-               if (true == msg.switchToImguiDemo) {
-                    // do lvgl work
-               } else {
-                    if (true == msg.switchToLvglDemo) {
-                         // do lvgl work
-                    } else {                                   
-                         if (true == msg.quitFlag){
-                              // deallocate all memory
-                              for (unsigned int i = 0; i < localCtlMsg.allocMbytes; i++){
-                                   remove_and_deallocate_vector();
-                              }
-                              // kill all Endless threads
-                              endlessManager.setNumberOfEndlessThreads(0); 
-                              // the thread pool handling is integrated in itself upon destruction!
-                              
-                              // wait for the thread to end at program exit
-                              imth.join();
-                              quitTasks = false;
-                              // simply break the loop:
-                              quitMainLoop = true;
-                                                  
-                              // wait for the thread to end at program exit
-                              imth.join();
-
-                         } else {
-                              // main work - first check allocate bytes
-                              if (localCtlMsg.allocMbytes > msg.allocMbytes){
-                                   // deallocate
-                                   for (unsigned int i = 0; i < localCtlMsg.allocMbytes - msg.allocMbytes; i++){
-                                        remove_and_deallocate_vector();
-                                   }
-                              } else {
-                                   if (localCtlMsg.allocMbytes < msg.allocMbytes){
-                                        for (unsigned int i = 0; i < msg.allocMbytes - localCtlMsg.allocMbytes; i++){
-                                             allocate_and_fill_memory_1MB();
-                                        }
-                                   }
-                              } // else do nothing - the amount is the same as before.
-
-                              // main work - check endlessCalcThreads
-                              if (localCtlMsg.endlessCalcThreads != msg.endlessCalcThreads){
-                                   endlessManager.setNumberOfEndlessThreads(msg.endlessCalcThreads); 
-                              }
-
-                              // main work - check triggerPiTasks
-                              if (localCtlMsg.triggerPiTasks != msg.triggerPiTasks){
-                                   // trigger numPiCalcTasks small calc tasks in separate threads
-                                   for (unsigned int i = 0; i < localCtlMsg.numPiCalcTasks; i++){
-                                        thread_pool.Schedule([i]()
-                                        {
-                                             calc_1000000_times();	
-                                        });
-                                   }
-                              } 
-
-                              // finally simply take the values
-                              localCtlMsg.allocMbytes = msg.allocMbytes;
-                              localCtlMsg.endlessCalcThreads = msg.endlessCalcThreads;
-                              localCtlMsg.numPiCalcTasks = msg.numPiCalcTasks;
-                              localCtlMsg.triggerPiTasks = msg.triggerPiTasks;
-                              std::cout << "/n" << msg.endlessCalcThreads << endl;
-                              std::cout << msg.allocMbytes << endl;
-                              std::cout << msg.numPiCalcTasks << endl;
-                              std::cout << msg.triggerPiTasks << endl;
-                              firstFlg = false;
-                              msgChanged = false;
-                         }       
+          if (true == msgChanged){
+               
+               if (true == msg.quitFlag || true == msg.switchToImguiDemo || true == msg.switchToLvglDemo){
+                    // deallocate all memory
+                    for (unsigned int i = 0; i < localCtlMsg.allocMbytes; i++){
+                         remove_and_deallocate_vector();
                     }
-               }
+                    // kill all Endless threads
+                    endlessManager.setNumberOfEndlessThreads(0); 
+                    // the thread pool handling is integrated in itself upon destruction!
+                    
+                    // wait for the thread to end at program exit
+                    imth.join();
+                    // simply break the loop:
+                    quitMainLoop = true;                                
+                    
+                    if (true == msg.quitFlag) {
+                         taskChangeFromMsg = quitApp;
+                    }                    
+                    
+                    if (true == msg.switchToImguiDemo) {
+                         taskChangeFromMsg = startImguiDemo;
+                    }
+                    
+                    if (true == msg.switchToLvglDemo) {
+                         taskChangeFromMsg = startLVGLdemo;
+                    }
+
+                    break;
+
+               } else {
+                    // main work - first check allocate bytes
+                    if (localCtlMsg.allocMbytes > msg.allocMbytes){
+                         // deallocate
+                         for (unsigned int i = 0; i < localCtlMsg.allocMbytes - msg.allocMbytes; i++){
+                              remove_and_deallocate_vector();
+                         }
+                    } else {
+                         if (localCtlMsg.allocMbytes < msg.allocMbytes){
+                              for (unsigned int i = 0; i < msg.allocMbytes - localCtlMsg.allocMbytes; i++){
+                                   allocate_and_fill_memory_1MB();
+                              }
+                         }
+                    } // else do nothing - the amount is the same as before.
+
+                    // main work - check endlessCalcThreads
+                    if (localCtlMsg.endlessCalcThreads != msg.endlessCalcThreads){
+                         endlessManager.setNumberOfEndlessThreads(msg.endlessCalcThreads); 
+                    }
+
+                    // main work - check triggerPiTasks
+                    if (localCtlMsg.triggerPiTasks != msg.triggerPiTasks){
+                         // trigger numPiCalcTasks small calc tasks in separate threads
+                         for (unsigned int i = 0; i < localCtlMsg.numPiCalcTasks; i++){
+                              thread_pool.Schedule([i]()
+                              {
+                                   calc_1000000_times();	
+                              });
+                         }
+                    } 
+
+                    // finally simply take the values
+                    localCtlMsg.allocMbytes = msg.allocMbytes;
+                    localCtlMsg.endlessCalcThreads = msg.endlessCalcThreads;
+                    localCtlMsg.numPiCalcTasks = msg.numPiCalcTasks;
+                    localCtlMsg.triggerPiTasks = msg.triggerPiTasks;
+                    /* std::cout << "/n" << msg.endlessCalcThreads << endl;
+                    std::cout << msg.allocMbytes << endl;
+                    std::cout << msg.numPiCalcTasks << endl;
+                    std::cout << msg.triggerPiTasks << endl;*/
+                    
+                    msgChanged = false;
+               }                
           }
      }
+     return taskChangeFromMsg;
+}
 
+taskChange executeImguiDEMO(){
+     
+     taskChange taskChangeFromMsg = doNothing;
+
+     bool quitMainLoop = false;
+
+     MessageCntrlImguiDemo_s MessageCtl;
+     MessageImguiDemo localCtlMsg = {false, false, false};     
+
+     // here we create the imgui thread.
+     std::thread imth(imguiStandardDemo, std::ref(MessageCtl));
+
+     while(false == quitMainLoop){
+          // MessageImguiDemo MainThreadImguiDemoReceiveMessage(MessageCntrlImguiDemo_s& msgCtrl);
+          auto msg = MainThreadImguiDemoReceiveMessage(MessageCtl);
+          
+          if (true == msg.quitFlag || true == msg.switchToSysmonImgui || true == msg.switchToLvglDemo){
+               
+               // the thread pool handling is integrated in itself upon destruction!
+               
+               // wait for the thread to end at program exit
+               imth.join();
+               // simply break the loop:
+               quitMainLoop = true;                                
+               
+               if (true == msg.quitFlag) {
+                    taskChangeFromMsg = quitApp;
+               }                    
+               
+               if (true == msg.switchToSysmonImgui) {
+                    taskChangeFromMsg = startSysmon;
+               }
+               
+               if (true == msg.switchToLvglDemo) {
+                    taskChangeFromMsg = startLVGLdemo;
+               }
+               break;
+          }
+     }
+     return taskChangeFromMsg;
+}
+
+taskChange executeLVGLdemo(){
+     
+     taskChange taskChangeFromMsg = doNothing;
+
+     bool quitMainLoop = false;
+
+     MessageCntrl_s MessageCtl;
+     MessageImguiSysmonLoad localCtlMsg = {0,0,0,0, false};     
+
+     // here we create the imgui thread.
+     std::thread imth(imguiSymonLoad, std::ref(MessageCtl));
+
+     while(false == quitMainLoop){
+          // MessageImguiSysmonLoad MainThreadReceiveMessage(MessageCntrl_s& msgCtrl)
+          auto msg = imguiSymonLoadReceiveMessage(MessageCtl);
+          
+          if (true == msg.quitFlag || true == msg.switchToImguiDemo || true == msg.switchToLvglDemo){
+               
+               // the thread pool handling is integrated in itself upon destruction!
+               
+               // wait for the thread to end at program exit
+               imth.join();
+               // simply break the loop:
+               quitMainLoop = true;                                
+               
+               if (true == msg.quitFlag) {
+                    taskChangeFromMsg = quitApp;
+               }                    
+               
+               if (true == msg.switchToSysmonImgui) {
+                    taskChangeFromMsg = startSysmon;
+               }
+               
+               if (true == msg.switchToImguiDemo) {
+                    taskChangeFromMsg = startImguiDemo;
+               }
+               break;
+          }
+     }
+     return taskChangeFromMsg;
+}
+
+int main()
+{    
+
+     auto stat = executeSysmonImguiLoadTest(); //  executeImguiDEMO();
+     stat = startImguiDemo;
+     
+     while (quitApp != stat){     
+          if (startSysmon == stat) {
+               stat = executeSysmonImguiLoadTest();
+          } else {
+               if (startImguiDemo == stat) {
+                    stat = executeImguiDEMO();
+               } else {               
+                    if (startLVGLdemo == stat) {
+                         stat = executeLVGLdemo();
+                    } else {
+                         if (quitApp == stat) break;
+                    }
+               }
+               
+          }
+     }
 
      std::cout << "Main thread finished." << std::endl;
 
