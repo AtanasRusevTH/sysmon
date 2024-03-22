@@ -314,8 +314,7 @@ taskChange executeLVGLdemo(){
 int main()
 {    
 
-     auto stat = executeSysmonImguiLoadTest(); //  executeImguiDEMO();
-     stat = startImguiDemo;
+     auto stat = executeSysmonImguiLoadTest(); //  executeImguiDEMO();     
      
      while (quitApp != stat){     
           if (startSysmon == stat) {
