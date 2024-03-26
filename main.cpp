@@ -314,19 +314,40 @@ taskChange executeLVGLdemo(){
 int main()
 {    
 
+     std::cout << "STARTING THE APP" << std::endl;
+
      auto stat = executeSysmonImguiLoadTest(); //  executeImguiDEMO();     
      
+     std::cout << "FINISHING INITIAL IMGUI DEMO" << std::endl;     
+     std::cout << "-------------------------------------------" << std::endl;
+
      while (quitApp != stat){     
+          
+     std::cout << "stat value:" << stat << std::endl;
           if (startSysmon == stat) {
+
+               std::cout << "STARTING executeSysmonImguiLoadTest();" << std::endl;
                stat = executeSysmonImguiLoadTest();
+               std::cout << "FINISHING executeSysmonImguiLoadTest()" << std::endl;     
+               std::cout << "-------------------------------------------" << std::endl;
           } else {
                if (startImguiDemo == stat) {
+                    std::cout << "STARTING executeImguiDEMO();" << std::endl;
                     stat = executeImguiDEMO();
+                    std::cout << "FINISHING executeImguiDEMO()" << std::endl;     
+                    std::cout << "-------------------------------------------" << std::endl;
                } else {               
                     if (startLVGLdemo == stat) {
+                         std::cout << "STARTING executeLVGLdemo();" << std::endl;
                          stat = executeLVGLdemo();
+                         std::cout << "FINISHING executeLVGLdemo()" << std::endl;     
+                         std::cout << "-------------------------------------------" << std::endl;
                     } else {
-                         if (quitApp == stat) break;
+                         if (quitApp == stat) {                              
+                              std::cout << "QUIT APP ====== STAT !!!!!!! KILLING THE MAIN LOOP" << std::endl;     
+                              std::cout << "-------------------------------------------" << std::endl;
+                              break;
+                         }
                     }
                }
                
