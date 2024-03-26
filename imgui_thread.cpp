@@ -6,6 +6,8 @@
 #include <stdlib.h>
 
 #include <fstream>
+#include <iostream>
+
 #include <sstream>
 #include <string>
 #include <vector>
@@ -380,9 +382,23 @@ int imguiSymonLoad(MessageCntrl_s& msgCtl)
      
      message.triggerPiTasks = false;
      
-     if (quit) message.quitFlag = true;
-     if (launchLvglDemo) message.switchToLvglDemo = true;
-     if (launchImguiDemo) message.switchToImguiDemo = true;
+     if (quit) {
+          message.quitFlag = true;
+     } else {
+          if (launchLvglDemo) {
+               message.switchToLvglDemo = true;
+          } else {
+               if (launchImguiDemo) {
+                    message.switchToImguiDemo = true;
+               } else {
+                    // failsafe!!
+                    std::cout << "FATAL ERROR : FAILSAFE activated in int imguiSymonLoad(MessageCntrl_s& msgCtl)" << std::endl;
+                    message.quitFlag = true;
+                    quit = true;
+               }
+          }
+     }   
+     
      
      imguiSymonLoadSendMessage(msgCtl, message);
 

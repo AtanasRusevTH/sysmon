@@ -167,16 +167,19 @@ taskChange executeSysmonImguiLoadTest(){
                     
                     if (true == msg.quitFlag) {
                          taskChangeFromMsg = quitApp;
+                         break;
                     }                    
                     
                     if (true == msg.switchToImguiDemo) {
                          taskChangeFromMsg = startImguiDemo;
+                    } else {
+                         if (true == msg.switchToLvglDemo) {
+                              taskChangeFromMsg = startLVGLdemo;
+                         } else {
+                              taskChangeFromMsg = quitApp;
+                         }
                     }
                     
-                    if (true == msg.switchToLvglDemo) {
-                         taskChangeFromMsg = startLVGLdemo;
-                    }
-
                     break;
 
                } else {
@@ -254,15 +257,20 @@ taskChange executeImguiDEMO(){
                
                if (true == msg.quitFlag) {
                     taskChangeFromMsg = quitApp;
+                    break;
                }                    
                
                if (true == msg.switchToSysmonImgui) {
                     taskChangeFromMsg = startSysmon;
+               } else {
+                    if (true == msg.switchToLvglDemo) {
+                         taskChangeFromMsg = startLVGLdemo;
+                    } else {
+                         taskChangeFromMsg = quitApp;
+                    }
                }
                
-               if (true == msg.switchToLvglDemo) {
-                    taskChangeFromMsg = startLVGLdemo;
-               }
+               
                break;
           }
      }
@@ -285,7 +293,7 @@ taskChange executeLVGLdemo(){
           // MessageImguiSysmonLoad MainThreadReceiveMessage(MessageCntrl_s& msgCtrl)
           auto msg = imguiSymonLoadReceiveMessage(MessageCtl);
           
-          if (true == msg.quitFlag || true == msg.switchToImguiDemo || true == msg.switchToLvglDemo){
+          if (true == msg.quitFlag || true == msg.switchToImguiDemo || true == msg.switchToSysmonImgui){
                
                // the thread pool handling is integrated in itself upon destruction!
                
@@ -293,18 +301,22 @@ taskChange executeLVGLdemo(){
                imth.join();
                // simply break the loop:
                quitMainLoop = true;                                
-               
+
                if (true == msg.quitFlag) {
                     taskChangeFromMsg = quitApp;
+                    break;
                }                    
                
                if (true == msg.switchToSysmonImgui) {
                     taskChangeFromMsg = startSysmon;
+               } else {
+                    if (true == msg.switchToImguiDemo) {
+                         taskChangeFromMsg = startImguiDemo;
+                    } else {
+                         taskChangeFromMsg = quitApp;
+                    }
                }
-               
-               if (true == msg.switchToImguiDemo) {
-                    taskChangeFromMsg = startImguiDemo;
-               }
+
                break;
           }
      }
