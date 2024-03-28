@@ -30,6 +30,8 @@
 #include "include/imgui_standard_demo.h"
 #include "endlessThMngr/endless_th_manager.h"
 
+extern "C" int lvgl_main(void);
+
 using namespace std::chrono_literals;
 using namespace std;
 
@@ -47,11 +49,11 @@ using namespace std;
 ***********************************************************************************************************************/
 
 enum taskChange {
-     doNothing,
-     startSysmon,
-     startImguiDemo,
-     startLVGLdemo,
-     quitApp,
+     doNothing = 0,
+     startSysmon = 1,
+     startImguiDemo = 2,
+     startLVGLdemo = 3,
+     quitApp = 4,
 };
 
 
@@ -248,8 +250,6 @@ taskChange executeImguiDEMO(){
           
           if (true == msg.quitFlag || true == msg.switchToSysmonImgui || true == msg.switchToLvglDemo){
                
-               // the thread pool handling is integrated in itself upon destruction!
-               
                // wait for the thread to end at program exit
                imth.join();
                // simply break the loop:
@@ -277,49 +277,25 @@ taskChange executeImguiDEMO(){
      return taskChangeFromMsg;
 }
 
+int lvglDemoWrapper (){
+     int result = lvgl_main();
+     return result;
+}
 taskChange executeLVGLdemo(){
      
-     taskChange taskChangeFromMsg = doNothing;
+     // we can launch with std::launch::async, which would immediately start the thread, 
+     // or with deferred, which will start it when the get method is called.
+     std::future<int> result_future = std::async(std::launch::deferred, lvglDemoWrapper);
+    
+     // Start the thread and wait for the return value
+     int result = result_future.get(); 
 
-     bool quitMainLoop = false;
+     taskChange taskChangeFromMsg = static_cast<taskChange> (result);
 
-     MessageCntrl_s MessageCtl;
-     MessageImguiSysmonLoad localCtlMsg = {0,0,0,0, false};     
-
-     // here we create the imgui thread.
-     std::thread imth(imguiSymonLoad, std::ref(MessageCtl));
-
-     while(false == quitMainLoop){
-          // MessageImguiSysmonLoad MainThreadReceiveMessage(MessageCntrl_s& msgCtrl)
-          auto msg = imguiSymonLoadReceiveMessage(MessageCtl);
-          
-          if (true == msg.quitFlag || true == msg.switchToImguiDemo || true == msg.switchToSysmonImgui){
-               
-               // the thread pool handling is integrated in itself upon destruction!
-               
-               // wait for the thread to end at program exit
-               imth.join();
-               // simply break the loop:
-               quitMainLoop = true;                                
-
-               if (true == msg.quitFlag) {
-                    taskChangeFromMsg = quitApp;
-                    break;
-               }                    
-               
-               if (true == msg.switchToSysmonImgui) {
-                    taskChangeFromMsg = startSysmon;
-               } else {
-                    if (true == msg.switchToImguiDemo) {
-                         taskChangeFromMsg = startImguiDemo;
-                    } else {
-                         taskChangeFromMsg = quitApp;
-                    }
-               }
-
-               break;
-          }
+     if (taskChangeFromMsg != startSysmon && taskChangeFromMsg != startImguiDemo){          
+          taskChangeFromMsg = quitApp;
      }
+     
      return taskChangeFromMsg;
 }
 
