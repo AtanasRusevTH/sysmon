@@ -50,7 +50,6 @@ enum taskChange {
      doNothing,
      startSysmon,
      startImguiDemo,
-     startLVGLdemo,
      quitApp,
 };
 
@@ -145,13 +144,12 @@ taskChange executeSysmonImguiLoadTest(){
           localCtlMsg.numPiCalcTasks != msg.numPiCalcTasks ||
           localCtlMsg.triggerPiTasks != msg.triggerPiTasks ||
           localCtlMsg.quitFlag != msg.quitFlag ||
-          localCtlMsg.switchToImguiDemo != msg.switchToImguiDemo ||
-          localCtlMsg.switchToLvglDemo != msg.switchToLvglDemo)
+          localCtlMsg.switchToImguiDemo != msg.switchToImguiDemo)
           msgChanged = true;
           
           if (true == msgChanged){
                
-               if (true == msg.quitFlag || true == msg.switchToImguiDemo || true == msg.switchToLvglDemo){
+               if (true == msg.quitFlag || true == msg.switchToImguiDemo){
                     // deallocate all memory
                     for (unsigned int i = 0; i < localCtlMsg.allocMbytes; i++){
                          remove_and_deallocate_vector();
@@ -173,11 +171,7 @@ taskChange executeSysmonImguiLoadTest(){
                     if (true == msg.switchToImguiDemo) {
                          taskChangeFromMsg = startImguiDemo;
                     } else {
-                         if (true == msg.switchToLvglDemo) {
-                              taskChangeFromMsg = startLVGLdemo;
-                         } else {
-                              taskChangeFromMsg = quitApp;
-                         }
+                         taskChangeFromMsg = quitApp;                         
                     }
                     
                     break;
@@ -237,7 +231,7 @@ taskChange executeImguiDEMO(){
      bool quitMainLoop = false;
 
      MessageCntrlImguiDemo_s MessageCtl;
-     MessageImguiDemo localCtlMsg = {false, false, false};     
+     MessageImguiDemo localCtlMsg = {false, false};     
 
      // here we create the imgui thread.
      std::thread imth(imguiStandardDemo, std::ref(MessageCtl));
@@ -246,9 +240,7 @@ taskChange executeImguiDEMO(){
           // MessageImguiDemo MainThreadImguiDemoReceiveMessage(MessageCntrlImguiDemo_s& msgCtrl);
           auto msg = MainThreadImguiDemoReceiveMessage(MessageCtl);
           
-          if (true == msg.quitFlag || true == msg.switchToSysmonImgui || true == msg.switchToLvglDemo){
-               
-               // the thread pool handling is integrated in itself upon destruction!
+          if (true == msg.quitFlag || true == msg.switchToSysmonImgui){
                
                // wait for the thread to end at program exit
                imth.join();
@@ -263,60 +255,10 @@ taskChange executeImguiDEMO(){
                if (true == msg.switchToSysmonImgui) {
                     taskChangeFromMsg = startSysmon;
                } else {
-                    if (true == msg.switchToLvglDemo) {
-                         taskChangeFromMsg = startLVGLdemo;
-                    } else {
-                         taskChangeFromMsg = quitApp;
-                    }
+                    taskChangeFromMsg = quitApp;                    
                }
                
                
-               break;
-          }
-     }
-     return taskChangeFromMsg;
-}
-
-taskChange executeLVGLdemo(){
-     
-     taskChange taskChangeFromMsg = doNothing;
-
-     bool quitMainLoop = false;
-
-     MessageCntrl_s MessageCtl;
-     MessageImguiSysmonLoad localCtlMsg = {0,0,0,0, false};     
-
-     // here we create the imgui thread.
-     std::thread imth(imguiSymonLoad, std::ref(MessageCtl));
-
-     while(false == quitMainLoop){
-          // MessageImguiSysmonLoad MainThreadReceiveMessage(MessageCntrl_s& msgCtrl)
-          auto msg = imguiSymonLoadReceiveMessage(MessageCtl);
-          
-          if (true == msg.quitFlag || true == msg.switchToImguiDemo || true == msg.switchToSysmonImgui){
-               
-               // the thread pool handling is integrated in itself upon destruction!
-               
-               // wait for the thread to end at program exit
-               imth.join();
-               // simply break the loop:
-               quitMainLoop = true;                                
-
-               if (true == msg.quitFlag) {
-                    taskChangeFromMsg = quitApp;
-                    break;
-               }                    
-               
-               if (true == msg.switchToSysmonImgui) {
-                    taskChangeFromMsg = startSysmon;
-               } else {
-                    if (true == msg.switchToImguiDemo) {
-                         taskChangeFromMsg = startImguiDemo;
-                    } else {
-                         taskChangeFromMsg = quitApp;
-                    }
-               }
-
                break;
           }
      }
@@ -349,17 +291,10 @@ int main()
                     std::cout << "FINISHING executeImguiDEMO()" << std::endl;     
                     std::cout << "-------------------------------------------" << std::endl;
                } else {               
-                    if (startLVGLdemo == stat) {
-                         std::cout << "STARTING executeLVGLdemo();" << std::endl;
-                         stat = executeLVGLdemo();
-                         std::cout << "FINISHING executeLVGLdemo()" << std::endl;     
+                    if (quitApp == stat) {                              
+                         std::cout << "QUIT APP ====== STAT !!!!!!! KILLING THE MAIN LOOP" << std::endl;     
                          std::cout << "-------------------------------------------" << std::endl;
-                    } else {
-                         if (quitApp == stat) {                              
-                              std::cout << "QUIT APP ====== STAT !!!!!!! KILLING THE MAIN LOOP" << std::endl;     
-                              std::cout << "-------------------------------------------" << std::endl;
-                              break;
-                         }
+                         break;
                     }
                }
                

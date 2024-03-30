@@ -81,7 +81,6 @@ int imguiSymonLoad(MessageCntrl_s& msgCtl)
      bool jump = false;
      bool quit = false;
      bool launchImguiDemo = false;
-     bool launchLvglDemo = false;
      bool reset = false;
 
      int procimax = 0;
@@ -131,7 +130,6 @@ int imguiSymonLoad(MessageCntrl_s& msgCtl)
 
           if (ImGui::IsKeyPressed(ImGuiKey_Q)) quit = true;
           if (ImGui::IsKeyPressed(ImGuiKey_I)) launchImguiDemo = true;
-          if (ImGui::IsKeyPressed(ImGuiKey_V)) launchLvglDemo = true;
 
           if (ImGui::IsKeyPressed(ImGuiKey_R)) reset = true;
                
@@ -198,8 +196,6 @@ int imguiSymonLoad(MessageCntrl_s& msgCtl)
           if (ImGui::Button("[L]OAD TEST ")) showin.flip(WIN_LOAD_TEST); // showin.show(WIN_LOAD_TEST, true);
           ImGui::SameLine();
           if (ImGui::Button("[I]MGUI DEMO ")) launchImguiDemo = true;
-          ImGui::SameLine();
-          if (ImGui::Button("L[V]GL DEMO ")) launchLvglDemo = true;
           ImGui::SameLine();          
           if (ImGui::Button("[Q]UIT ")) quit = true;
 
@@ -361,7 +357,7 @@ int imguiSymonLoad(MessageCntrl_s& msgCtl)
           //if (ImGui::End(ImGuiKey_Q)) quit = true;
           //if (ImGui::SmallButton("[q]uit")) quit = true;
 
-          if (quit || launchLvglDemo || launchImguiDemo)
+          if (quit || launchImguiDemo)
           {
                glfwSetWindowShouldClose(window, 1);
           }
@@ -385,17 +381,13 @@ int imguiSymonLoad(MessageCntrl_s& msgCtl)
      if (quit) {
           message.quitFlag = true;
      } else {
-          if (launchLvglDemo) {
-               message.switchToLvglDemo = true;
+          if (launchImguiDemo) {
+               message.switchToImguiDemo = true;
           } else {
-               if (launchImguiDemo) {
-                    message.switchToImguiDemo = true;
-               } else {
-                    // failsafe!!
-                    std::cout << "FATAL ERROR : FAILSAFE activated in int imguiSymonLoad(MessageCntrl_s& msgCtl)" << std::endl;
-                    message.quitFlag = true;
-                    quit = true;
-               }
+               // failsafe!!
+               std::cout << "FATAL ERROR : FAILSAFE activated in int imguiSymonLoad(MessageCntrl_s& msgCtl)" << std::endl;
+               message.quitFlag = true;
+               quit = true;
           }
      }   
      

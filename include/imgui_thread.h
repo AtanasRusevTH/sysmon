@@ -15,7 +15,6 @@ struct MessageImguiSysmonLoad {
   unsigned int triggerPiTasks;     // single trigger to calc PI.
   bool quitFlag;
   bool switchToImguiDemo;
-  bool switchToLvglDemo;
   bool switchToSysmonImgui;
 };
 
@@ -30,9 +29,5 @@ struct MessageCntrl_s {
 void imguiSymonLoadSendMessage(MessageCntrl_s& msgCtrl, MessageImguiSysmonLoad message);
 MessageImguiSysmonLoad imguiSymonLoadReceiveMessage(MessageCntrl_s& msgCtrl);
 int imguiSymonLoad(MessageCntrl_s& msgCtl);
-
-void LvglSendMessage(MessageCntrl_s& msgCtrl, MessageImguiSysmonLoad message);
-MessageImguiSysmonLoad MainThreadLvglReceiveMessage(MessageCntrl_s& msgCtrl);
-int lvglTh(MessageCntrl_s& msgCtl);
 
 #endif // #ifndef IMGUI_THREAD_H

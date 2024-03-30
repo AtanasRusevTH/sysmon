@@ -83,11 +83,9 @@ int imguiStandardDemo(MessageCntrlImguiDemo_s& msgCtl)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL2_Init();     
     bool launchImguiSysmon = false;
-    bool launchLvglDemo = false;
     bool quit = false;
     MessageImguiDemo message;
     message.quitFlag = false;
-    message.switchToLvglDemo = false;
     message.switchToSysmonImgui = false;
 
     float font_scale = 1.65;
@@ -132,7 +130,6 @@ int imguiStandardDemo(MessageCntrlImguiDemo_s& msgCtl)
         io.FontGlobalScale = font_scale;
         
         if (ImGui::IsKeyPressed(ImGuiKey_I)) launchImguiSysmon = true;
-        if (ImGui::IsKeyPressed(ImGuiKey_V)) launchLvglDemo = true;
         if (ImGui::IsKeyPressed(ImGuiKey_Q)) quit = true;
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
@@ -147,7 +144,6 @@ int imguiStandardDemo(MessageCntrlImguiDemo_s& msgCtl)
             ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
             if (ImGui::Button("[I]MGUI SYSMON ")) launchImguiSysmon = true;
-            if (ImGui::Button("L[V]GL DEMO ")) launchLvglDemo = true;
             if (ImGui::Button("[Q]UIT ")) quit = true;
           
 
@@ -196,29 +192,23 @@ int imguiStandardDemo(MessageCntrlImguiDemo_s& msgCtl)
         glfwMakeContextCurrent(window);
         glfwSwapBuffers(window);
 
-        if (quit || launchLvglDemo || launchImguiSysmon)
+        if (quit || launchImguiSysmon)
         {
             glfwSetWindowShouldClose(window, 1);
         }
     }
 
-    if (launchLvglDemo) {
-        message.switchToLvglDemo = true;
+    if (launchImguiSysmon) {
+        message.switchToSysmonImgui = true;
     } else {
-        if (launchImguiSysmon) {
-            message.switchToSysmonImgui = true;
+        if (quit) {
+            message.quitFlag = true;
         } else {
-            if (quit) {
-                message.quitFlag = true;
-            } else {
-                // failsafe
-                std::cout << "FATAL ERROR : FAILSAFE activated in int imguiStandardDemo(MessageCntrlImguiDemo_s& msgCtl)" << std::endl;
-                message.quitFlag = true;
-            }
+            // failsafe
+            std::cout << "FATAL ERROR : FAILSAFE activated in int imguiStandardDemo(MessageCntrlImguiDemo_s& msgCtl)" << std::endl;
+            message.quitFlag = true;
         }
     }
-    
-    
      
     ImGuiDemoSendMessage(msgCtl, message);
 

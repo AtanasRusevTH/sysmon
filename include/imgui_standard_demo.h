@@ -11,7 +11,6 @@
 // Define a message structure
 struct MessageImguiDemo {
   bool quitFlag;
-  bool switchToLvglDemo;
   bool switchToSysmonImgui;
 };
 
@@ -24,8 +23,6 @@ struct MessageCntrlImguiDemo_s {
 };
 
 #define SWITCH_TO_SYSMON 0
-#define SWITCH_TO_LVGL 1
-
 
 void ImGuiDemoSendMessage(MessageCntrlImguiDemo_s& msgCtrl, MessageImguiDemo message);
 MessageImguiDemo MainThreadImguiDemoReceiveMessage(MessageCntrlImguiDemo_s& msgCtrl);
